@@ -1,0 +1,122 @@
+version: '2.2'
+
+services:
+  es01:
+    container_name: elk-es01
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION}
+    environment:
+      - node.name=es01
+#      - discovery.seed_hosts=es01,es02
+#      - cluster.initial_master_nodes=es01,es02
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=$ELASTIC_PASSWORD 
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+      - xpack.license.self_generated.type=trial 
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.key=$CERTS_DIR/es01/es01.key
+      - xpack.security.http.ssl.certificate_authorities=$CERTS_DIR/ca/ca.crt
+      - xpack.security.http.ssl.certificate=$CERTS_DIR/es01/es01.crt
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.verification_mode=certificate 
+      - xpack.security.transport.ssl.certificate_authorities=$CERTS_DIR/ca/ca.crt
+      - xpack.security.transport.ssl.certificate=$CERTS_DIR/es01/es01.crt
+      - xpack.security.transport.ssl.key=$CERTS_DIR/es01/es01.key
+    volumes: ['data01:/usr/share/elasticsearch/data', 'certs:$CERTS_DIR']
+    ports:
+      - 9200:9200
+    networks:
+      - elk
+    healthcheck:
+      test: curl --cacert $CERTS_DIR/ca/ca.crt -s https://localhost:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  kib01:
+    #container_name: es01
+    #image: docker.elastic.co/elasticsearch/elasticsearch:7.14.1
+    image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION}
+    container_name: elk-kib01
+    restart: always
+    env_file: .env
+    depends_on:
+      - es01
+    ports:
+      - 5601:5601
+    environment:
+      SERVERNAME: localhost
+      ELASTICSEARCH_URL: https://es01:9200
+      ELASTICSEARCH_HOSTS: https://es01:9200
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: changeme
+      xpack.encryptedSavedObjects.encryptionKey: kjdkjdf3434343kdjkfjdkfdkf3434366611122234435
+      ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES: $CERTS_DIR/ca/ca.crt
+      SERVER_SSL_ENABLED: "true"
+      SERVER_SSL_KEY: $CERTS_DIR/kib01/kib01.key
+      SERVER_SSL_CERTIFICATE: $CERTS_DIR/kib01/kib01.crt
+    networks:
+      - elk
+    volumes:
+      - certs:$CERTS_DIR:z
+      - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:z
+      #- "/etc/timezone:/etc/timezone:ro"
+      #- "/etc/localtime:/etc/localtime:ro"
+
+  logs01:
+    image: docker.elastic.co/logstash/logstash:${ELASTIC_VERSION}
+    container_name: elk-logs01
+#    restart: always
+    env_file: .env
+    depends_on:
+      - es01
+    ports:
+      - "5044:5044"
+      - "50000:50000"
+      - "9600:9600"
+    volumes:
+      - ./logstash/logstash.yml:/usr/share/logstash/config/logstash.yml
+#      - ./logstash/ca.crt:/usr/share/logstash/config/ca.crt
+      - ./logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+#      - lsdata:/usr/share/logstash/data
+      - certs:$CERTS_DIR:z
+    environment:
+#      - xpack.monitoring.elasticsearch.ssl.certificate_authority=$CERTS_DIR/ca/ca.crt
+      - "LS_JAVA_OPTS=-Xmx1g -Xms1g"
+    networks:
+      - elk
+
+
+
+#  es02:
+#    container_name: es02
+#    image: docker.elastic.co/elasticsearch/elasticsearch:7.14.1
+#    environment:
+#      - node.name=es02
+#      - discovery.seed_hosts=es01,es02
+#      - cluster.initial_master_nodes=es01,es02
+#      - ELASTIC_PASSWORD=$ELASTIC_PASSWORD
+#      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+#      - xpack.license.self_generated.type=trial
+#      - xpack.security.enabled=true
+#      - xpack.security.http.ssl.enabled=true
+#      - xpack.security.http.ssl.key=$CERTS_DIR/es02/es02.key
+#      - xpack.security.http.ssl.certificate_authorities=$CERTS_DIR/ca/ca.crt
+#      - xpack.security.http.ssl.certificate=$CERTS_DIR/es02/es02.crt
+#      - xpack.security.transport.ssl.enabled=true
+#      - xpack.security.transport.ssl.verification_mode=certificate 
+#      - xpack.security.transport.ssl.certificate_authorities=$CERTS_DIR/ca/ca.crt
+#      - xpack.security.transport.ssl.certificate=$CERTS_DIR/es02/es02.crt
+#      - xpack.security.transport.ssl.key=$CERTS_DIR/es02/es02.key
+#    volumes: ['data02:/usr/share/elasticsearch/data', 'certs:$CERTS_DIR']
+
+  wait_until_ready:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION}
+    command: /usr/bin/true
+    depends_on: {"es01": {"condition": "service_healthy"}}
+
+networks:
+  elk:
+    driver: bridge
+#volumes: {"data01", "data02", "certs"}
+volumes: {"data01", "lsdata", "certs"}

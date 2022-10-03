@@ -42,11 +42,12 @@ services:
       - 9200:9200
     networks:
       - elk
-    healthcheck:
-      test: curl --cacert $CERTS_DIR/ca/ca.crt -s https://localhost:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
-      interval: 30s
-      timeout: 10s
-      retries: 5
+
+    # healthcheck:
+    #   test: curl --cacert $CERTS_DIR/ca/ca.crt -s https://localhost:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 5
 
   kib01:
     image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION}
@@ -79,6 +80,9 @@ services:
       - ./logstash/logstash.yml:/usr/share/logstash/config/logstash.yml
       - ./logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
       - certs:$CERTS_DIR:z
+      # - ./logstash/ca.crt:/usr/share/logstash/config/ca.crt
+      # - lsdata:/usr/share/logstash/data
+
     environment:
       - "LS_JAVA_OPTS=-Xmx1g -Xms1g"
     networks:

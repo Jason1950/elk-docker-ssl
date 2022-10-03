@@ -1,0 +1,27 @@
+
+
+## X-Pack settings
+## see https://www.elastic.co/guide/en/elasticsearch/reference/current/setup-xpack.html
+#
+
+# 使用 basic, 如果使用trail 體驗完後須收費
+xpack.license.self_generated.type: basic
+
+# ssl 加密開啟
+xpack.monitoring.collection.enabled: true
+xpack.security.enabled: true
+xpack.security.http.ssl.enabled: true
+xpack.security.transport.ssl.enabled: true
+
+xpack.security.http.ssl.key: certs/es01.key 
+xpack.security.http.ssl.certificate: certs/es01.crt 
+xpack.security.http.ssl.certificate_authorities: certs/ca.crt 
+
+xpack.security.transport.ssl.key: certs/es01.key 
+xpack.security.transport.ssl.certificate: certs/es01.crt
+xpack.security.transport.ssl.certificate_authorities: certs/ca.crt
+
+# $CERTS_DIR : /usr/share/elasticsearch/config/certificates
+# 需新增 from : $CERTS_DIR/es01/es01.key
+# 需新增 from : $CERTS_DIR/es01/es01.crt
+# 需新增 from : $CERTS_DIR/ca/ca.crt

@@ -9,7 +9,7 @@ services:
       - node.name=es01
       - discovery.type=single-node
       - ELASTIC_PASSWORD=$ELASTIC_PASSWORD 
-      - "ES_JAVA_OPTS=-Xms4g -Xmx4g"
+      - "ES_JAVA_OPTS=-Xmx16g -Xms16g"
       - bootstrap.memory_lock=false
       - xpack.license.self_generated.type=basic
       # ssl settings
@@ -51,7 +51,6 @@ services:
 
   kib01:
     image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION}
-    #image: docker.elastic.co/kibana/kibana:8.3.2
     container_name: elk-kib01
     restart: always
     env_file: .env
@@ -100,6 +99,5 @@ services:
 networks:
   elk:
     driver: bridge
-#volumes: {"data01", "data02", "certs"}
-#volumes: {"data01", "lsdata", "certs"}
+#volumes: {"data01", "data02", "lsdata", "certs"}
 volumes: {"lsdata", "certs"}
